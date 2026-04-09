@@ -1,5 +1,4 @@
 ﻿using WebApplication10.Contracts.DTO;
-using WebApplication10.Contracts.DTO.Authorization;
 using WebApplication10.Entities;
 
 namespace WebApplication10.Repositories.Interfaces

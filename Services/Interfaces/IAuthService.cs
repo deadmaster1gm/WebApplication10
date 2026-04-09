@@ -1,10 +1,11 @@
-﻿using WebApplication10.Contracts.DTO.Authorization;
+﻿using WebApplication10.Contracts.DTO;
+using WebApplication10.Contracts.DTO.Authentication;
 
 namespace WebApplication10.Services.Interfaces
 {
     public interface IAuthService
     {
-        Task RegisterAsync (RegisterUserRequestDto dto, CancellationToken ct);
-        Task <bool> LoginAsync (LoginUserRequestDto dto, CancellationToken ct);
+        Task RegisterAsync(RegisterRequestUserDto dto, CancellationToken ct);
+        Task<AuthResponseDto?> LoginAsync(LoginRequestUserDto dto, CancellationToken ct);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using WebApplication10.Contracts.DTO.Authorization;
+using WebApplication10.Contracts.DTO;
+using WebApplication10.Contracts.DTO.Authentication;
 using WebApplication10.Entities;
 using WebApplication10.Exceptions;
 using WebApplication10.Repositories.Interfaces;
@@ -9,23 +10,21 @@ namespace WebApplication10.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUserRepository _repository;
         private readonly PasswordHasher<User> _passwordHasher;
-        private readonly ILogger<AuthService> _logger;
+        private readonly ITokenService _tokenService;
 
-        public AuthService(IUserRepository userRepository, ILogger<AuthService> logger)
+        public AuthService(IUserRepository repository, ITokenService tokenService)
         {
-            _userRepository = userRepository;
+            _repository = repository;
             _passwordHasher = new PasswordHasher<User>();
-            _logger = logger;
+            _tokenService = tokenService;
         }
-        public async Task RegisterAsync(RegisterUserRequestDto dto, CancellationToken ct)
+        public async Task RegisterAsync(RegisterRequestUserDto dto, CancellationToken ct)
         {
-            _logger.LogInformation("Попытка регистрации пользователя");
+            var existingUser = await _repository.GetByEmailAsync(dto.Email, ct);
 
-            var existingUser = await _userRepository.GetByEmailAsync(dto.Email, ct);
-
-            if (existingUser is not null)
+            if(existingUser is not null)
             {
                 throw new EmailAlreadyExistsException(dto.Email);
             }
@@ -36,32 +35,30 @@ namespace WebApplication10.Services
                 TimeCreated = DateTime.UtcNow,
                 Name = dto.Name,
                 Surname = dto.Surname,
-                Email = dto.Email
+                Email = dto.Email,
+                OrderNumber = string.Empty
             };
 
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
-            await _userRepository.AddAsync(user, ct);
-
-            _logger.LogInformation($"Пользователь с {dto.Email} зарегистрирован");
+            await _repository.AddAsync(user, ct);
         }
-        public async Task<bool> LoginAsync(LoginUserRequestDto dto, CancellationToken ct)
+        public async Task<AuthResponseDto?> LoginAsync(LoginRequestUserDto dto, CancellationToken ct)
         {
-            _logger.LogInformation("Попытка логина");
-
-            var user = await _userRepository.GetByEmailAsync(dto.Email, ct);
+            var user = await _repository.GetByEmailAsync(dto.Email, ct);
 
             if (user is null)
-                return false;
+                return null;
 
             var result = _passwordHasher.VerifyHashedPassword(
-                            user,
-                            user.PasswordHash,
-                            dto.Password);
+                user,
+                user.PasswordHash,
+                dto.Password);
 
-            _logger.LogInformation("Логин успешен");
+            if (result == PasswordVerificationResult.Failed)
+                return null;
 
-            return result != PasswordVerificationResult.Failed;
+            return _tokenService.CreateToken(user);
         }
     }
 }

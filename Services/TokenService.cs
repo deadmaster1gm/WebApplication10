@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;  
 using System.Security.Claims;
 using System.Text;
 using WebApplication10.Contracts.DTO;
@@ -24,20 +24,29 @@ namespace WebApplication10.Services
 
             var claims = new List<Claim>
             {
-                new Claim (JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim (JwtRegisteredClaimNames.Sub, user.Email.ToString()),
-                new Claim (ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim (ClaimTypes.Email, user.Email)
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email)
             };
 
-            var signingKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_jwtOptions.Key));
+            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
 
             var signingCredentials = new SigningCredentials(
                 signingKey,
                 SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken();
+            var token = new JwtSecurityToken(
+                issuer: _jwtOptions.Issuer,
+                audience: _jwtOptions.Audience,
+                claims: claims,
+                expires: expiresAt,
+                signingCredentials: signingCredentials);
+
+            var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return new AuthResponseDto(accessToken, expiresAt);
+
         }
     }
 }

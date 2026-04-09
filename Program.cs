@@ -4,6 +4,7 @@ using WebApplication10.Data;
 using WebApplication10.Entities;
 using WebApplication10.Infrastructure.Sorting;
 using WebApplication10.Middleware;
+using WebApplication10.Options;
 using WebApplication10.Repositories;
 using WebApplication10.Repositories.Interfaces;
 using WebApplication10.Services;
@@ -24,10 +25,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection("Jwt"));
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISortMap<User>, UserSortMap> ();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 var app = builder.Build();
 

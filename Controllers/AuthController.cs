@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebApplication10.Contracts.DTO.Authorization;
+using WebApplication10.Contracts.DTO.Authentication;
 using WebApplication10.Services.Interfaces;
 
 namespace WebApplication10.Controllers
@@ -8,27 +8,29 @@ namespace WebApplication10.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IAuthService _service;
+        private readonly IAuthService _authService;
 
-        public AuthController(IAuthService service)
+        public AuthController(IAuthService authService)
         {
-            _service = service;
+            _authService = authService;
         }
         [HttpPost("register")]
-        public async Task<IActionResult> RegisterUser(RegisterUserRequestDto dto, CancellationToken ct)
+        public async Task <IActionResult> RegisterUser (RegisterRequestUserDto dto, CancellationToken ct)
         {
-            await _service.RegisterAsync(dto, ct);
+            await _authService.RegisterAsync(dto, ct);
             return Ok("Регистрация успешна");
         }
         [HttpPost("login")]
-        public async Task<IActionResult> LoginUser(LoginUserRequestDto dto, CancellationToken ct)
+        public async Task <IActionResult> LoginUser (LoginRequestUserDto dto, CancellationToken ct)
         {
-            var success = await _service.LoginAsync(dto, ct);
+            var response = await _authService.LoginAsync(dto, ct);
 
-            if (!success)
+            if(response is null)
+            {
                 return Unauthorized("Неверный email или пароль");
+            }
 
-            return Ok("Логин успешен");
+            return Ok(response);
         }
     }
 }

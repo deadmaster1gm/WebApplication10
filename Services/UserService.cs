@@ -48,6 +48,7 @@ namespace WebApplication10.Services
             user.Surname = dto.Surname;
             user.Email = dto.Email;
             user.OrderNumber = dto.OrderNumber;
+            user.Role = dto.Role;
 
             await _repository.UpdateAsync(user, ct);
 
@@ -76,9 +77,11 @@ namespace WebApplication10.Services
             {
                 Id = user.Id,
                 TimeCreated = user.TimeCreated,
+                Role = user.Role,
                 Name = user.Name,
                 Surname = user.Surname,
                 Email = user.Email,
+                PasswordHash = user.PasswordHash,
                 OrderNumber = user.OrderNumber,
             };
         }

@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Security.Claims;
+using System.Text;
 using WebApplication10.Data;
 using WebApplication10.Entities;
 using WebApplication10.Infrastructure.Sorting;
@@ -17,23 +21,47 @@ Log.Logger = new LoggerConfiguration()
             .WriteTo.Seq("http://localhost:5341")
             .CreateLogger();
 
-
+builder.Host.UseSerilog();
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddAuthorization();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<JwtOptions>(
-    builder.Configuration.GetSection("Jwt"));
+    builder.Configuration.GetSection(JwtOptions.SectionName));
+
+var jwt = builder.Configuration
+        .GetSection(JwtOptions.SectionName)
+        .Get<JwtOptions>()!;
+
+builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwt.Issuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwt.Audience,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+
+            };
+        });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISortMap<User>, UserSortMap> ();
-builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 var app = builder.Build();
 
@@ -46,6 +74,8 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

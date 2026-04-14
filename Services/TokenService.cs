@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;  
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using WebApplication10.Contracts.DTO;
 using WebApplication10.Entities;
 using WebApplication10.Options;
 using WebApplication10.Services.Interfaces;
-
 namespace WebApplication10.Services
 {
     public class TokenService : ITokenService
@@ -20,24 +19,24 @@ namespace WebApplication10.Services
         }
         public AuthResponseDto CreateToken(User user)
         {
-            var expiresAt = DateTime.UtcNow.AddMinutes(_jwtOptions.AccessTokenMinutes);
+            var expiresAt = DateTime.UtcNow.AddHours(_jwtOptions.AccessTokenHours);
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role),
             };
 
-            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
+            var signingKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_jwtOptions.Key));
 
             var signingCredentials = new SigningCredentials(
                 signingKey,
                 SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _jwtOptions.Issuer,
+                issuer:_jwtOptions.Issuer,
                 audience: _jwtOptions.Audience,
                 claims: claims,
                 expires: expiresAt,
@@ -46,7 +45,6 @@ namespace WebApplication10.Services
             var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
 
             return new AuthResponseDto(accessToken, expiresAt);
-
         }
     }
 }

@@ -15,20 +15,19 @@ namespace WebApplication10.Controllers
             _authService = authService;
         }
         [HttpPost("register")]
-        public async Task <IActionResult> RegisterUser (RegisterRequestUserDto dto, CancellationToken ct)
+        public async Task<IActionResult> Register(RegisterUserRequestDto dto, CancellationToken ct)
         {
             await _authService.RegisterAsync(dto, ct);
+
             return Ok("Регистрация успешна");
         }
         [HttpPost("login")]
-        public async Task <IActionResult> LoginUser (LoginRequestUserDto dto, CancellationToken ct)
+        public async Task<IActionResult> Login (LoginUserRequestDto dto, CancellationToken ct)
         {
             var response = await _authService.LoginAsync(dto, ct);
 
-            if(response is null)
-            {
+            if (response is null)
                 return Unauthorized("Неверный email или пароль");
-            }
 
             return Ok(response);
         }

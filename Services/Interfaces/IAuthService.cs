@@ -5,7 +5,7 @@ namespace WebApplication10.Services.Interfaces
 {
     public interface IAuthService
     {
-        Task RegisterAsync(RegisterRequestUserDto dto, CancellationToken ct);
-        Task<AuthResponseDto?> LoginAsync(LoginRequestUserDto dto, CancellationToken ct);
+        Task RegisterAsync(RegisterUserRequestDto dto, CancellationToken ct);
+        Task<AuthResponseDto?> LoginAsync(LoginUserRequestDto dto, CancellationToken ct);
     }
 }

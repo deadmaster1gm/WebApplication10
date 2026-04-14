@@ -20,7 +20,7 @@ namespace WebApplication10.Services
             _passwordHasher = new PasswordHasher<User>();
             _tokenService = tokenService;
         }
-        public async Task RegisterAsync(RegisterRequestUserDto dto, CancellationToken ct)
+        public async Task RegisterAsync(RegisterUserRequestDto dto, CancellationToken ct)
         {
             var existingUser = await _repository.GetByEmailAsync(dto.Email, ct);
 
@@ -32,18 +32,18 @@ namespace WebApplication10.Services
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                TimeCreated = DateTime.UtcNow,
                 Name = dto.Name,
                 Surname = dto.Surname,
                 Email = dto.Email,
-                OrderNumber = string.Empty
+                OrderNumber = string.Empty,
+                Role = Roles.User
             };
 
             user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
             await _repository.AddAsync(user, ct);
         }
-        public async Task<AuthResponseDto?> LoginAsync(LoginRequestUserDto dto, CancellationToken ct)
+        public async Task<AuthResponseDto?> LoginAsync(LoginUserRequestDto dto, CancellationToken ct)
         {
             var user = await _repository.GetByEmailAsync(dto.Email, ct);
 
@@ -51,12 +51,14 @@ namespace WebApplication10.Services
                 return null;
 
             var result = _passwordHasher.VerifyHashedPassword(
-                user,
-                user.PasswordHash,
-                dto.Password);
+                        user,
+                        user.PasswordHash,
+                        dto.Password);
 
-            if (result == PasswordVerificationResult.Failed)
+            if(result == PasswordVerificationResult.Failed)
+            {
                 return null;
+            }
 
             return _tokenService.CreateToken(user);
         }

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using System.Security.Claims;
 using System.Text;
 using WebApplication10.Data;
 using WebApplication10.Entities;
@@ -16,9 +15,11 @@ using WebApplication10.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var seqUrl = builder.Configuration["Seq:Url"] ?? "http://seq:80";
+
 Log.Logger = new LoggerConfiguration()
             .WriteTo.Console()
-            .WriteTo.Seq("http://localhost:5341")
+            .WriteTo.Seq(seqUrl)
             .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -53,7 +54,6 @@ builder.Services
 
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero,
-
             };
         });
 
@@ -65,6 +65,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -72,8 +78,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 

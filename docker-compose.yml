@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:18
-    container_name: myapi-postgres
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: myapi_db
@@ -11,17 +11,48 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myapi_user -d myapi_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   seq:
     image: datalust/seq
-    container_name: myapi-seq
+    container_name: seq
     restart: unless-stopped
     environment:
-      - ACCEPT_EULA=Y
-      - SEQ_FIRSTRUN_ADMINPASSWORD=YourStrongPassword
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: "YourStrongPassword123!"
     ports:
       - "5341:80"
     volumes:
       - seq_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api
+    restart: unless-stopped
+    depends_on:
+
+      postgres:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=myapi_db;Username=myapi_user;Password=myapi_password
+      Jwt__Issuer: WebApplication10
+      Jwt__Audience: WebApplication10Client
+      Jwt__AccessTokenHours: 24
+      Jwt__Key: this-is-my-super-secret-key-12345
+      Seq__Url: http://seq:80
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres_data:
   seq_data:
